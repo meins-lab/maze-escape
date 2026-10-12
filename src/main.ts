@@ -36,6 +36,8 @@ const LAST_LEVEL = 5;
 const HIDDEN_LEVEL = 6;
 const HIDDEN_CODE = '+lv6';
 const HIDDEN_MODE_SCHEDULE = [7, Infinity];
+// in the hidden round every enemy wears the chaser's color so roles can't be read at a glance
+const CHASER_COLOR = '#43a047';
 // small extra player speed (tiles/s) in the hidden round
 const HIDDEN_PLAYER_SPEED_BONUS = 0.3;
 // after a U-turn an enemy must keep going this long; stops it jittering between two tiles
@@ -132,7 +134,7 @@ const resetPositions = () => {
   player = { x: PLAYER_START.x, y: PLAYER_START.y, dir: LEFT, nextDir: LEFT, face: LEFT };
   const g = (name: Ghost['name'], color: string, home: Dir, corner: Dir, releaseAt: number): Ghost => ({
     name,
-    color,
+    color: isHiddenRound() ? CHASER_COLOR : color,
     home,
     corner,
     releaseAt: isHiddenRound() ? 0 : releaseAt,
@@ -144,7 +146,7 @@ const resetPositions = () => {
     frightened: false,
   });
   ghosts = [
-    g('chaser', '#43a047', HOUSE_EXIT, { x: 25, y: -3 }, 0),
+    g('chaser', CHASER_COLOR, HOUSE_EXIT, { x: 25, y: -3 }, 0),
     g('ambusher', '#8e24aa', { x: 13, y: 14 }, { x: 2, y: -3 }, 0),
     g('flanker', '#1e88e5', { x: 11, y: 14 }, { x: 27, y: 31 }, 4),
     g('wanderer', '#00897b', { x: 15, y: 14 }, { x: 0, y: 31 }, 8),
