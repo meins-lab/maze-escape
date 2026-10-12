@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: check & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # setup-node의 cache 옵션을 쓰면 corepack을 켜기 전에 `yarn cache dir`이 돌아
+      # Yarn 1이 packageManager 필드를 보고 거부한다. 캐시 없이 간다
+      - run: corepack enable
+
+      - run: yarn install --immutable
+
+      - run: yarn check
+
+      - run: yarn build
