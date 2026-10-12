@@ -74,9 +74,10 @@ if (lives <= 0) {
 
 ## 검증
 
-PR을 올리기 전에 둘 다 통과해야 합니다.
+PR을 올리기 전에 셋 다 통과해야 합니다.
 
 ```bash
+yarn lint
 yarn check
 yarn build
 ```
@@ -92,5 +93,6 @@ yarn build
 yarn install
 yarn dev
 yarn build
+yarn lint
 yarn check
 ```

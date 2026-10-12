@@ -24,6 +24,7 @@
 ```bash
 yarn install
 yarn dev
+yarn lint
 yarn check   # 모든 맵 검사
 yarn build
 ```
