@@ -69,7 +69,14 @@ fix: 먹힌 도깨비가 집 앞에서 맴도는 문제 수정
 
 ## 배포와 릴리스
 
-`main`이 프로덕션 배포 브랜치입니다. 배포 플랫폼은 아직 정하지 않았습니다.
+`main`이 프로덕션 배포 브랜치입니다. Netlify가 `main`을 프로덕션으로,
+`dev`를 브랜치 배포로, `dev`로 가는 PR을 Deploy Preview로 배포합니다.
+
+| 대상 | 주소 |
+|---|---|
+| 프로덕션 (`main`) | <https://meins-maze-escape.netlify.app> |
+| 브랜치 배포 (`dev`) | <https://dev--meins-maze-escape.netlify.app> |
+| PR 미리보기 | `deploy-preview-<PR번호>--meins-maze-escape.netlify.app` |
 
 ```
 feature/12_...  ─PR→  dev  ─release PR→  main  ─자동 배포→  프로덕션
