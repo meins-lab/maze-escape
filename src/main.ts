@@ -29,6 +29,16 @@ const MODE_SCHEDULE = [7, 20, 7, 20, 5, 20, 5, Infinity];
 // seconds an eaten enemy rests inside the house before coming back out
 const HOUSE_REST_SECONDS = 3;
 const HOUSE_CENTER = { x: 13, y: 14 };
+// per-level enemy tuning for the normal levels, index 0 = level 1
+// ghost: tiles/s, fright: seconds, release: seconds before ambusher/flanker/wanderer leave the house,
+// aim: chance an enemy takes the best turn at a junction instead of a random one
+const LEVELS = [
+  { ghost: 6.0, fright: 8, release: [4, 10, 16], aim: 0.7 },
+  { ghost: 6.5, fright: 7, release: [3, 8, 13], aim: 0.8 },
+  { ghost: 7.0, fright: 6, release: [2, 6, 10], aim: 0.85 },
+  { ghost: 7.25, fright: 5.5, release: [1, 5, 9], aim: 0.9 },
+  { ghost: 7.5, fright: 5, release: [0, 4, 8], aim: 0.95 },
+];
 // clearing this level shows the ending
 const LAST_LEVEL = 5;
 // hidden round, reached only by typing HIDDEN_CODE on the title screen: one scatter only,
@@ -102,8 +112,11 @@ const isHiddenRound = () => level === HIDDEN_LEVEL;
 const modeSchedule = () => (isHiddenRound() ? HIDDEN_MODE_SCHEDULE : MODE_SCHEDULE);
 const scatterMode = () => modeIndex % 2 === 0;
 const playerSpeed = () => Math.min(10, 7.5 + level * 0.25) + (isHiddenRound() ? HIDDEN_PLAYER_SPEED_BONUS : 0);
-const ghostSpeed = () => Math.min(9.5, 7 + level * 0.25);
-const frightDuration = () => Math.max(1, 6 - level * 0.5);
+// levels past the table (the hidden round) keep the original formulas
+const levelTuning = () => LEVELS[level - 1];
+const ghostSpeed = () => levelTuning()?.ghost ?? Math.min(9.5, 7 + level * 0.25);
+const frightDuration = () => levelTuning()?.fright ?? Math.max(1, 6 - level * 0.5);
+const ghostAim = () => levelTuning()?.aim ?? 1;
 
 const playerCanWalk = (x: number, y: number) => {
   const t = tileAt(x, y);
@@ -145,11 +158,12 @@ const resetPositions = () => {
     state: name === 'chaser' ? 'active' : 'house',
     frightened: false,
   });
+  const release = levelTuning()?.release ?? [0, 4, 8];
   ghosts = [
     g('chaser', CHASER_COLOR, HOUSE_EXIT, { x: 25, y: -3 }, 0),
-    g('ambusher', '#8e24aa', { x: 13, y: 14 }, { x: 2, y: -3 }, 0),
-    g('flanker', '#1e88e5', { x: 11, y: 14 }, { x: 27, y: 31 }, 4),
-    g('wanderer', '#00897b', { x: 15, y: 14 }, { x: 0, y: 31 }, 8),
+    g('ambusher', '#8e24aa', { x: 13, y: 14 }, { x: 2, y: -3 }, release[0]),
+    g('flanker', '#1e88e5', { x: 11, y: 14 }, { x: 27, y: 31 }, release[1]),
+    g('wanderer', '#00897b', { x: 15, y: 14 }, { x: 0, y: 31 }, release[2]),
   ];
   roundTime = 0;
   modeIndex = 0;
@@ -269,7 +283,8 @@ const ghostOnCenter = (g: Ghost) => {
     g.dir = reverse;
     return;
   }
-  if (g.frightened) {
+  // frightened enemies wander; on easier levels active ones sometimes take a wrong turn too
+  if (g.frightened || (g.state === 'active' && Math.random() > ghostAim())) {
     g.dir = options[Math.floor(Math.random() * options.length)];
     return;
   }
