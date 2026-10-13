@@ -48,6 +48,11 @@ const LAST_LEVEL = 5;
 // all enemies out at once, no power pellets, and enemies may U-turn mid-corridor
 const HIDDEN_LEVEL = 6;
 const HIDDEN_CODE = '+lv6';
+// autopilot, also reached from the title: the robot drives itself from level 1,
+// but a held arrow key (or one tap/swipe, for the next tile) steers; let go and it drives again
+const AI_CODE = '+ai';
+// a tile counts as dangerous when a cat could get there this much sooner than (or later than) the robot
+const THREAT_MARGIN_SECONDS = 0.2;
 const HIDDEN_MODE_SCHEDULE = [7, Infinity];
 // in the hidden round every enemy wears the chaser's color so roles can't be read at a glance
 const CHASER_COLOR = '#e53935';
@@ -104,6 +109,9 @@ let roundTime = 0;
 let modeIndex = 0;
 let modeTime = 0;
 let frightTime = 0;
+let autopilot = false;
+const heldKeys = new Set<string>();
+let userTurn = false;
 let eatCombo = 0;
 let score = 0;
 let high = readHigh();
@@ -182,7 +190,8 @@ const setState = (s: typeof state) => {
   stateTime = 0;
 };
 
-const newGame = (startLevel = 1) => {
+const newGame = (startLevel = 1, auto = false) => {
+  autopilot = auto;
   score = 0;
   lives = MAX_LIVES;
   level = startLevel;
@@ -309,6 +318,172 @@ const ghostOnCenter = (g: Ghost) => {
   g.dir = best;
 };
 
+const isAutoDriving = () => autopilot && heldKeys.size === 0 && !userTurn;
+
+// breadth-first step counts from (sx, sy); -1 where unreachable. Side tunnels wrap
+const stepsFrom = (sx: number, sy: number, canWalk: (x: number, y: number) => boolean) => {
+  const dist = new Int16Array(COLS * ROWS).fill(-1);
+  const queue = [wrapCol(sx) + sy * COLS];
+  dist[queue[0]] = 0;
+  for (let i = 0; i < queue.length; i++) {
+    const x = queue[i] % COLS;
+    const y = Math.floor(queue[i] / COLS);
+    for (const d of DIRS) {
+      const nx = wrapCol(x + d.x);
+      const ny = y + d.y;
+      const k = nx + ny * COLS;
+      if (ny >= 0 && ny < ROWS && dist[k] === -1 && canWalk(nx, ny)) {
+        dist[k] = dist[queue[i]] + 1;
+        queue.push(k);
+      }
+    }
+  }
+  return dist;
+};
+
+// Earliest time (s) cat g could stand on each tile. Cats on the loose can't turn back, so they're
+// walked as (tile, heading) states; ones that can reverse (in the house, a mode switch coming up,
+// or the U-turning final round) get a plain flood instead.
+const catArrival = (g: Ghost, speed: number) => {
+  const time = new Float32Array(COLS * ROWS).fill(Infinity);
+  const canWalk = (x: number, y: number) => y >= 0 && y < ROWS && ghostCanWalk(g, x, y);
+  const switchSoon = modeSchedule()[modeIndex] - modeTime < 2;
+  if (g.state !== 'active' || switchSoon || isHiddenRound() || isStop(g.dir)) {
+    stepsFrom(Math.round(g.x), Math.round(g.y), canWalk).forEach((v, k) => {
+      if (v >= 0) {
+        time[k] = v / speed;
+      }
+    });
+    return time;
+  }
+  // the tile the cat is heading into, and how far it still has to go
+  const ax = Math.round(g.x + g.dir.x * 0.49);
+  const ay = Math.round(g.y + g.dir.y * 0.49);
+  const startT = (Math.abs(ax - g.x) + Math.abs(ay - g.y)) / speed;
+  const seen = new Float32Array(COLS * ROWS * 4).fill(Infinity);
+  const di0 = DIRS.findIndex((d) => same(d, g.dir));
+  const queue: [number, number, number][] = [[wrapCol(ax) + ay * COLS, di0, startT]];
+  seen[(wrapCol(ax) + ay * COLS) * 4 + di0] = startT;
+  for (let i = 0; i < queue.length; i++) {
+    const [k, di, t] = queue[i];
+    time[k] = Math.min(time[k], t);
+    const x = k % COLS;
+    const y = Math.floor(k / COLS);
+    DIRS.forEach((d, ndi) => {
+      if (ndi === (di + 2) % 4) {
+        return;
+      }
+      const nx = wrapCol(x + d.x);
+      const ny = y + d.y;
+      const nk = nx + ny * COLS;
+      const nt = t + 1 / speed;
+      if (canWalk(nx, ny) && seen[nk * 4 + ndi] > nt) {
+        seen[nk * 4 + ndi] = nt;
+        queue.push([nk, ndi, nt]);
+      }
+    });
+  }
+  return time;
+};
+
+// Pick the robot's next direction. Each way out is scored by how much floor the robot can still
+// reach before any cat (so it never walks into a pincer), then by how close the nearest dust is.
+// A battery wins when a cat is close, and blue cats are worth chasing.
+const AUTOPILOT_SAFE_AREA = 20; // tiles of safe floor ahead that count as "plenty of room"
+const AUTOPILOT_REVERSE_COST = 25;
+const autopilotDir = (): Dir => {
+  const ps = playerSpeed();
+  const gs = ghostSpeed();
+  // earliest time (s) each tile can hold a cat that can catch the robot.
+  // A blue cat is harmless until the battery runs out, so it only counts from then on
+  const catTime = new Float32Array(COLS * ROWS).fill(Infinity);
+  for (const g of ghosts) {
+    if (g.state === 'eaten' || g.state === 'entering') {
+      continue;
+    }
+    const delay = g.state === 'house' ? Math.max(0, g.releaseAt - roundTime) : 0;
+    const harmlessFor = g.frightened ? frightTime : 0;
+    catArrival(g, gs).forEach((v, k) => {
+      catTime[k] = Math.min(catTime[k], Math.max(harmlessFor, delay + v));
+    });
+  }
+  const here = wrapCol(player.x) + player.y * COLS;
+  const catNear = catTime[here] * gs < 7;
+  const isPrey = (x: number, y: number) =>
+    ghosts.some((g) => g.frightened && frightTime > 2 && g.state === 'active' && Math.round(g.x) === x && Math.round(g.y) === y);
+
+  // flood the safe floor reachable through one first step
+  const explore = (d: Dir) => {
+    const steps = new Int16Array(COLS * ROWS).fill(-1);
+    const sx = wrapCol(player.x + d.x);
+    const sy = player.y + d.y;
+    const s0 = sx + sy * COLS;
+    if (!playerCanWalk(sx, sy) || catTime[s0] <= 1 / ps + THREAT_MARGIN_SECONDS) {
+      return { area: 0, goal: Infinity };
+    }
+    steps[s0] = 1;
+    steps[here] = 0;
+    const queue = [s0];
+    let goal = Infinity;
+    for (let i = 0; i < queue.length && queue.length < 160; i++) {
+      const k = queue[i];
+      const x = k % COLS;
+      const y = Math.floor(k / COLS);
+      const t = grid[y][x];
+      if (t === '.' || t === 'o' || isPrey(x, y)) {
+        const bonus = (t === 'o' && catNear ? 30 : 0) + (isPrey(x, y) ? 15 : 0);
+        goal = Math.min(goal, steps[k] - bonus);
+      }
+      for (const n of DIRS) {
+        const nx = wrapCol(x + n.x);
+        const ny = y + n.y;
+        const nk = nx + ny * COLS;
+        if (ny < 0 || ny >= ROWS || steps[nk] !== -1 || !playerCanWalk(nx, ny)) {
+          continue;
+        }
+        if (catTime[nk] <= (steps[k] + 1) / ps + THREAT_MARGIN_SECONDS) {
+          continue;
+        }
+        steps[nk] = steps[k] + 1;
+        queue.push(nk);
+      }
+    }
+    return { area: queue.length, goal };
+  };
+
+  let best = player.dir;
+  let bestScore = -Infinity;
+  for (const d of DIRS) {
+    const { area, goal } = explore(d);
+    if (area === 0) {
+      continue;
+    }
+    // room to move matters most (up to a cap), then nearer dust; turning back costs extra so it
+    // doesn't dither between two equally bad ways while the cats close in
+    const reverse = d.x === -player.dir.x && d.y === -player.dir.y;
+    const score =
+      Math.min(area, AUTOPILOT_SAFE_AREA) * 10 - Math.min(goal, 60) - (reverse ? AUTOPILOT_REVERSE_COST : 0) + (same(d, player.dir) ? 1 : 0);
+    if (score > bestScore) {
+      bestScore = score;
+      best = d;
+    }
+  }
+  if (bestScore > -Infinity) {
+    return best;
+  }
+  // every way is covered: step to the neighbor the cats need longest to reach
+  let fleeTime = -Infinity;
+  for (const d of DIRS) {
+    const nx = wrapCol(player.x + d.x);
+    const ny = player.y + d.y;
+    if (playerCanWalk(nx, ny) && catTime[nx + ny * COLS] > fleeTime) {
+      fleeTime = catTime[nx + ny * COLS];
+      best = d;
+    }
+  }
+  return best;
+};
+
 const playerOnCenter = () => {
   const t = tileAt(player.x, player.y);
   if (t === '.' || t === 'o') {
@@ -326,6 +501,11 @@ const playerOnCenter = () => {
       }
     }
   }
+  if (isAutoDriving()) {
+    player.nextDir = autopilotDir();
+  }
+  // a tap gets this one tile center; after that the autopilot is back unless a key is still held
+  userTurn = false;
   if (playerCanWalk(player.x + player.nextDir.x, player.y + player.nextDir.y)) {
     player.dir = player.nextDir;
   }
@@ -427,7 +607,7 @@ const update = (dt: number) => {
   }
 };
 
-const setDir = (d: Dir) => {
+const setDir = (d: Dir, steer = true) => {
   if (state === 'ending') {
     // short pause so the clearing keypress doesn't skip the ending
     if (stateTime > 1.5) {
@@ -438,6 +618,9 @@ const setDir = (d: Dir) => {
   if (state === 'title' || state === 'over') {
     newGame();
     return;
+  }
+  if (steer) {
+    userTurn = true;
   }
   player.nextDir = d;
 };
@@ -460,6 +643,8 @@ const typeCode = (e: KeyboardEvent) => {
   } else if (e.key === 'Enter') {
     if (code.toLowerCase() === HIDDEN_CODE) {
       newGame(HIDDEN_LEVEL);
+    } else if (code.toLowerCase() === AI_CODE) {
+      newGame(1, true);
     }
     code = null;
   } else if (e.key === 'Escape') {
@@ -483,10 +668,18 @@ window.addEventListener('keydown', (e) => {
   const d = KEYS[e.code];
   if (d) {
     e.preventDefault();
+    heldKeys.add(e.code);
     setDir(d);
   } else if (e.code === 'Space' || e.code === 'Enter') {
-    setDir(player.nextDir);
+    setDir(player.nextDir, false);
   }
+});
+window.addEventListener('keyup', (e) => {
+  heldKeys.delete(e.code);
+});
+// a keyup lost to another window would pin the robot in manual
+window.addEventListener('blur', () => {
+  heldKeys.clear();
 });
 
 // swipe on touch screens
@@ -790,6 +983,9 @@ const drawBoard = () => {
 
   for (let i = 0; i < lives - (state === 'ready' ? 1 : 0); i++) {
     drawPlayer(TS * (2 + i * 2), H - TS, RIGHT, 0, TS * 1.3);
+  }
+  if (autopilot) {
+    text(isAutoDriving() ? 'AUTO' : 'MANUAL', W / 2, H - TS + 5, isAutoDriving() ? '#66bb6a' : '#f5c542', 'center');
   }
   text(`LV ${level}`, W - TS, H - TS + 5, isHiddenRound() ? '#e53935' : '#ffffff', 'right');
 };
