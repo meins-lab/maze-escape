@@ -94,7 +94,9 @@ let frightTime = 0;
 let eatCombo = 0;
 let score = 0;
 let high = readHigh();
-let lives = 3;
+// lives the player can hold; clearing a level gives one back up to this cap
+const MAX_LIVES = 3;
+let lives = MAX_LIVES;
 let level = 1;
 let dotsLeft = 0;
 
@@ -165,7 +167,7 @@ const setState = (s: typeof state) => {
 
 const newGame = (startLevel = 1) => {
   score = 0;
-  lives = 3;
+  lives = MAX_LIVES;
   level = startLevel;
   fillDots();
   resetPositions();
@@ -337,6 +339,7 @@ const update = (dt: number) => {
   }
   if (state === 'clear' && stateTime > 2) {
     level++;
+    lives = Math.min(MAX_LIVES, lives + 1);
     fillDots();
     resetPositions();
   }
