@@ -16,6 +16,9 @@ type Ghost = Mover & {
 
 const TS = 16; // logical tile size
 const HUD_TOP = 3;
+// house palette: dark wood around the board, cream floor inside
+const FRAME_COLOR = '#3b2f2a';
+const FLOOR_COLOR = '#f4ead7';
 const W = COLS * TS;
 const H = (ROWS + HUD_TOP + 2) * TS;
 const UP: Dir = { x: 0, y: -1 };
@@ -47,7 +50,7 @@ const HIDDEN_LEVEL = 6;
 const HIDDEN_CODE = '+lv6';
 const HIDDEN_MODE_SCHEDULE = [7, Infinity];
 // in the hidden round every enemy wears the chaser's color so roles can't be read at a glance
-const CHASER_COLOR = '#43a047';
+const CHASER_COLOR = '#e53935';
 // small extra player speed (tiles/s) in the hidden round
 const HIDDEN_PLAYER_SPEED_BONUS = 0.3;
 // after a U-turn an enemy must keep going this long; stops it jittering between two tiles
@@ -517,7 +520,22 @@ const py = (y: number) => (y + 0.5 + HUD_TOP) * TS;
 
 const drawMaze = () => {
   const flash = state === 'clear' && Math.floor(stateTime * 4) % 2 === 1;
-  ctx.strokeStyle = flash ? '#ffffff' : currentMaze().wall;
+  const wall = flash ? FRAME_COLOR : currentMaze().wall;
+  // the hidden round drops the warm floor for black, so it feels hostile
+  ctx.fillStyle = isHiddenRound() ? '#000000' : FLOOR_COLOR;
+  ctx.fillRect(0, HUD_TOP * TS, W, ROWS * TS);
+  // wall blocks get a light wash of the maze color, like furniture on the floor
+  ctx.fillStyle = wall;
+  ctx.globalAlpha = 0.18;
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      if (grid[y][x] === '#') {
+        ctx.fillRect(x * TS, (y + HUD_TOP) * TS, TS, TS);
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = wall;
   ctx.lineWidth = 2;
   ctx.beginPath();
   for (let y = 0; y < ROWS; y++) {
@@ -549,74 +567,130 @@ const drawMaze = () => {
   }
   ctx.stroke();
 
-  ctx.fillStyle = '#c8b27a';
+  ctx.fillStyle = '#8d6e63';
   ctx.fillRect(13 * TS, (12 + HUD_TOP) * TS + 6, TS * 2, 3);
 
-  ctx.fillStyle = '#f5e6c8';
   const blink = Math.floor(performance.now() / 200) % 2 === 0;
+  const dw = TS * 0.6;
+  const dh = dw * (dust.naturalHeight / dust.naturalWidth || 1);
+  const bh = TS * 1.15;
+  const bw = bh * (battery.naturalWidth / battery.naturalHeight || 1);
   for (let y = 0; y < ROWS; y++) {
     for (let x = 0; x < COLS; x++) {
       const t = grid[y][x];
-      if (t === '.') {
-        ctx.fillRect(px(x) - 2, py(y) - 2, 4, 4);
-      } else if (t === 'o' && (blink || state !== 'play')) {
-        ctx.beginPath();
-        ctx.arc(px(x), py(y), 6, 0, Math.PI * 2);
-        ctx.fill();
+      if (t === '.' && dust.complete) {
+        ctx.drawImage(dust, px(x) - dw / 2, py(y) - dh / 2, dw, dh);
+      } else if (t === 'o' && battery.complete && (blink || state !== 'play')) {
+        ctx.drawImage(battery, px(x) - bw / 2, py(y) - bh / 2, bw, bh);
       }
     }
   }
 };
 
-const millirang = new Image();
-millirang.src = '/millirang.png';
+const robot = new Image();
+robot.src = '/robot.png';
+const dust = new Image();
+dust.src = '/dust.png';
+const battery = new Image();
+battery.src = '/battery.png';
+const cat = new Image();
+cat.src = '/cat.png';
+
+// color-washed copies of the cat for the frightened look, built once the image loads
+const tinted = (img: HTMLImageElement, color: string, amount: number) => {
+  const c = document.createElement('canvas');
+  c.width = img.naturalWidth;
+  c.height = img.naturalHeight;
+  const t = c.getContext('2d')!;
+  t.drawImage(img, 0, 0);
+  t.globalCompositeOperation = 'source-atop';
+  t.globalAlpha = amount;
+  t.fillStyle = color;
+  t.fillRect(0, 0, c.width, c.height);
+  return c;
+};
+let catScared: HTMLCanvasElement | null = null;
+let catFlash: HTMLCanvasElement | null = null;
+cat.onload = () => {
+  catScared = tinted(cat, '#3949ab', 0.6);
+  catFlash = tinted(cat, '#ffffff', 0.7);
+};
+
+// cat art with a role-colored outline hugging its silhouette, cached per color and look
+const OUTLINE_PX = 8; // in source pixels; about 1.3 logical px once scaled down
+const outlined = new Map<string, HTMLCanvasElement>();
+const outlinedCat = (art: HTMLImageElement | HTMLCanvasElement, look: string, color: string) => {
+  const key = `${look}|${color}`;
+  const hit = outlined.get(key);
+  if (hit) {
+    return hit;
+  }
+  const d = OUTLINE_PX;
+  const c = document.createElement('canvas');
+  c.width = art.width + d * 2;
+  c.height = art.height + d * 2;
+  const o = c.getContext('2d')!;
+  for (let a = 0; a < 16; a++) {
+    const ang = (a / 16) * Math.PI * 2;
+    o.drawImage(art, d + Math.cos(ang) * d, d + Math.sin(ang) * d);
+  }
+  o.globalCompositeOperation = 'source-in';
+  o.fillStyle = color;
+  o.fillRect(0, 0, c.width, c.height);
+  o.globalCompositeOperation = 'source-over';
+  o.drawImage(art, d, d);
+  outlined.set(key, c);
+  return c;
+};
 
 // Millirang face: mirrored when heading left, squashes a little while chomping
-const drawPlayer = (x: number, y: number, face: Dir, chomp: number, size = TS * 1.7, spin = 0) => {
-  if (!millirang.complete || millirang.naturalWidth === 0) {
+const drawPlayer = (x: number, y: number, face: Dir, chomp: number, size = TS * 2, spin = 0) => {
+  if (!robot.complete || robot.naturalWidth === 0) {
     return;
   }
-  const h = size * (millirang.naturalHeight / millirang.naturalWidth);
+  const h = size * (robot.naturalHeight / robot.naturalWidth);
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(spin);
-  ctx.scale(face.x < 0 ? -1 : 1, 1 - chomp * 0.12);
-  ctx.drawImage(millirang, -size / 2, -h / 2, size, h);
+  // the art faces left; flip it when heading right
+  ctx.scale(face.x > 0 ? -1 : 1, 1 - chomp * 0.12);
+  ctx.drawImage(robot, -size / 2, -h / 2, size, h);
   ctx.restore();
 };
 
 const drawGhost = (g: Ghost) => {
   const x = px(g.x);
   const y = py(g.y) + (g.state === 'house' ? Math.sin(performance.now() / 150) * 2 : 0);
-  const r = TS * 0.8;
   if (g.state !== 'eaten' && g.state !== 'entering') {
-    const flashing = g.frightened && frightTime < 2 && Math.floor(frightTime * 5) % 2 === 0;
-    ctx.fillStyle = g.frightened ? (flashing ? '#ffffff' : '#3949ab') : g.color;
-    // dokkaebi: round body with two horns, bobbing as it walks
-    const bob = Math.sin(performance.now() / 110 + g.home.x) * 1.5;
-    ctx.beginPath();
-    ctx.ellipse(x, y + bob, r, r * 0.9, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    for (const hx of [-1, 1]) {
-      ctx.moveTo(x + hx * r * 0.75, y + bob - r * 0.45);
-      ctx.lineTo(x + hx * r * 0.85, y + bob - r * 1.25);
-      ctx.lineTo(x + hx * r * 0.25, y + bob - r * 0.8);
-    }
-    ctx.fill();
-    if (g.frightened) {
-      ctx.fillStyle = flashing ? '#e53935' : '#f5e6c8';
-      ctx.fillRect(x - 5, y - 5, 3, 3);
-      ctx.fillRect(x + 2, y - 5, 3, 3);
+    if (!cat.complete || cat.naturalWidth === 0) {
       return;
     }
+    const flashing = g.frightened && frightTime < 2 && Math.floor(frightTime * 5) % 2 === 0;
+    const bob = Math.sin(performance.now() / 110 + g.home.x) * 1.5;
+    // the outline color tells the four cats apart
+    const look = g.frightened ? (flashing ? 'flash' : 'scared') : 'normal';
+    const base = (look === 'flash' ? catFlash : look === 'scared' ? catScared : cat) ?? cat;
+    const color = look === 'flash' ? '#ffffff' : look === 'scared' ? '#3949ab' : g.color;
+    const art = outlinedCat(base, look, color);
+    const w = TS * 1.6 * (art.width / cat.naturalWidth);
+    const h = w * (art.height / art.width);
+    ctx.save();
+    ctx.translate(x, y + bob);
+    // the art faces left; flip it when heading right
+    ctx.scale(g.dir.x > 0 ? -1 : 1, 1);
+    ctx.drawImage(art, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return;
   }
   // eyes look where the ghost is heading
   for (const ex of [-5, 5]) {
     ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = FRAME_COLOR;
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.ellipse(x + ex, y - 4, 4, 5, 0, 0, Math.PI * 2);
     ctx.fill();
+    ctx.stroke();
     ctx.fillStyle = '#212121';
     ctx.beginPath();
     ctx.arc(x + ex + g.dir.x * 2, y - 4 + g.dir.y * 2, 2, 0, Math.PI * 2);
@@ -625,14 +699,19 @@ const drawGhost = (g: Ghost) => {
 };
 
 const text = (s: string, x: number, y: number, color = '#ffffff', align: CanvasTextAlign = 'left') => {
-  ctx.fillStyle = color;
   ctx.textAlign = align;
+  // dark rim keeps text readable over the cream floor
+  ctx.strokeStyle = FRAME_COLOR;
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.strokeText(s, x, y);
+  ctx.fillStyle = color;
   ctx.fillText(s, x, y);
 };
 
 const draw = () => {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = '#000000';
+  ctx.fillStyle = isHiddenRound() ? '#000000' : FRAME_COLOR;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.setTransform(scale, 0, 0, scale, offX, offY);
   // keep tunnel travelers from drawing outside the board on wide screens
@@ -694,7 +773,7 @@ const drawBoard = () => {
     // Millirang spins and shrinks away
     const k = Math.min(1, Math.max(0, (stateTime - 0.5) / 1));
     if (k < 1) {
-      drawPlayer(px(player.x), py(player.y), RIGHT, 0, TS * 1.7 * (1 - k), k * Math.PI * 4);
+      drawPlayer(px(player.x), py(player.y), RIGHT, 0, TS * 2 * (1 - k), k * Math.PI * 4);
     }
   } else {
     const moving = state === 'play' && !isStop(player.dir);
