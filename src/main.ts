@@ -2,13 +2,14 @@ import { COLS, HOUSE_EXIT, MAZES, PLAYER_START, ROWS } from './maze.ts';
 
 type Dir = { x: number; y: number };
 type Mover = { x: number; y: number; dir: Dir };
-type GhostState = 'house' | 'leaving' | 'active' | 'eaten' | 'entering';
+type GhostState = 'house' | 'leaving' | 'active' | 'napping';
 type Ghost = Mover & {
   name: 'chaser' | 'ambusher' | 'flanker' | 'wanderer';
   color: string;
   home: { x: number; y: number };
   corner: { x: number; y: number };
   releaseAt: number;
+  wakeAt: number;
   uturnReadyAt: number;
   state: GhostState;
   frightened: boolean;
@@ -29,9 +30,9 @@ const STOP: Dir = { x: 0, y: 0 };
 const DIRS = [UP, LEFT, DOWN, RIGHT]; // arcade tie-break order
 // arcade scatter/chase rhythm in seconds; the last chase lasts forever
 const MODE_SCHEDULE = [7, 20, 7, 20, 5, 20, 5, Infinity];
-// seconds an eaten enemy rests inside the house before coming back out
-const HOUSE_REST_SECONDS = 3;
-const HOUSE_CENTER = { x: 13, y: 14 };
+// a caught cat naps where it was caught, then wakes once the robot is far enough away
+const NAP_SECONDS = 5;
+const WAKE_DISTANCE = 4;
 // per-level enemy tuning for the normal levels, index 0 = level 1
 // ghost: tiles/s, fright: seconds, release: seconds before ambusher/flanker/wanderer leave the house,
 // aim: chance an enemy takes the best turn at a junction instead of a random one
@@ -138,7 +139,7 @@ const playerCanWalk = (x: number, y: number) => {
 const ghostCanWalk = (g: Ghost, x: number, y: number) => {
   const t = tileAt(x, y);
   if (t === '-') {
-    return g.state !== 'active';
+    return g.state === 'house' || g.state === 'leaving';
   }
   return t !== '#';
 };
@@ -164,6 +165,7 @@ const resetPositions = () => {
     home,
     corner,
     releaseAt: isHiddenRound() ? 0 : releaseAt,
+    wakeAt: 0,
     uturnReadyAt: 0,
     x: home.x,
     y: home.y,
@@ -244,11 +246,7 @@ const advance = (e: Mover, dist: number, onCenter: () => void, canWalk: (x: numb
 };
 
 const ghostTarget = (g: Ghost) => {
-  // eyes head for the door first, then drop inside (targeting the house directly lets them loop around it)
-  if (g.state === 'entering') {
-    return HOUSE_CENTER;
-  }
-  if (g.state === 'leaving' || g.state === 'eaten') {
+  if (g.state === 'leaving') {
     return HOUSE_EXIT;
   }
   if (scatterMode()) {
@@ -276,22 +274,12 @@ const ghostOnCenter = (g: Ghost) => {
   if (g.state === 'leaving' && g.x === HOUSE_EXIT.x && g.y === HOUSE_EXIT.y) {
     g.state = 'active';
   }
-  if (g.state === 'eaten' && g.x === HOUSE_EXIT.x && g.y === HOUSE_EXIT.y) {
-    g.state = 'entering';
-  }
-  if (g.state === 'entering' && g.x === HOUSE_CENTER.x && g.y === HOUSE_CENTER.y) {
-    // back home: rest, then the usual house release takes it out again
-    g.state = 'house';
-    g.releaseAt = roundTime + HOUSE_REST_SECONDS;
-    g.dir = UP;
-    return;
-  }
   const reverse = { x: -g.dir.x, y: -g.dir.y };
   const canUturn = isHiddenRound() && g.state === 'active' && !g.frightened && roundTime >= g.uturnReadyAt;
   const options = DIRS.filter(
     (d) =>
       ghostCanWalk(g, g.x + d.x, g.y + d.y) &&
-      (g.state === 'leaving' || g.state === 'entering' || canUturn || !same(d, reverse)),
+      (g.state === 'leaving' || canUturn || !same(d, reverse)),
   );
   if (options.length === 0) {
     g.dir = reverse;
@@ -398,10 +386,8 @@ const autopilotDir = (): Dir => {
   // A blue cat is harmless until the battery runs out, so it only counts from then on
   const catTime = new Float32Array(COLS * ROWS).fill(Infinity);
   for (const g of ghosts) {
-    if (g.state === 'eaten' || g.state === 'entering') {
-      continue;
-    }
-    const delay = g.state === 'house' ? Math.max(0, g.releaseAt - roundTime) : 0;
+    const wakeIn = g.state === 'house' ? g.releaseAt : g.state === 'napping' ? g.wakeAt : roundTime;
+    const delay = Math.max(0, wakeIn - roundTime);
     const harmlessFor = g.frightened ? frightTime : 0;
     catArrival(g, gs).forEach((v, k) => {
       catTime[k] = Math.min(catTime[k], Math.max(harmlessFor, delay + v));
@@ -577,8 +563,13 @@ const update = (dt: number) => {
       }
       continue;
     }
-    const speed =
-      g.state === 'eaten' || g.state === 'entering' ? 15 : g.state === 'leaving' ? 4 : g.frightened ? 4.5 : ghostSpeed();
+    if (g.state === 'napping') {
+      if (roundTime >= g.wakeAt && Math.hypot(g.x - player.x, g.y - player.y) > WAKE_DISTANCE) {
+        g.state = 'active';
+      }
+      continue;
+    }
+    const speed = g.state === 'leaving' ? 4 : g.frightened ? 4.5 : ghostSpeed();
     advance(g, speed * dt, () => ghostOnCenter(g), (x, y) => ghostCanWalk(g, x, y));
   }
 
@@ -587,7 +578,8 @@ const update = (dt: number) => {
       continue;
     }
     if (g.frightened) {
-      g.state = 'eaten';
+      g.state = 'napping';
+      g.wakeAt = roundTime + NAP_SECONDS;
       g.frightened = false;
       score += 200 * 2 ** eatCombo;
       eatCombo++;
@@ -852,42 +844,37 @@ const drawPlayer = (x: number, y: number, face: Dir, chomp: number, size = TS * 
 };
 
 const drawGhost = (g: Ghost) => {
-  const x = px(g.x);
-  const y = py(g.y) + (g.state === 'house' ? Math.sin(performance.now() / 150) * 2 : 0);
-  if (g.state !== 'eaten' && g.state !== 'entering') {
-    if (!cat.complete || cat.naturalWidth === 0) {
-      return;
-    }
-    const flashing = g.frightened && frightTime < 2 && Math.floor(frightTime * 5) % 2 === 0;
-    const bob = Math.sin(performance.now() / 110 + g.home.x) * 1.5;
-    // the outline color tells the four cats apart
-    const look = g.frightened ? (flashing ? 'flash' : 'scared') : 'normal';
-    const base = (look === 'flash' ? catFlash : look === 'scared' ? catScared : cat) ?? cat;
-    const color = look === 'flash' ? '#ffffff' : look === 'scared' ? '#3949ab' : g.color;
-    const art = outlinedCat(base, look, color);
-    const w = TS * 1.6 * (art.width / cat.naturalWidth);
-    const h = w * (art.height / art.width);
-    ctx.save();
-    ctx.translate(x, y + bob);
-    // the art faces left; flip it when heading right
-    ctx.scale(g.dir.x > 0 ? -1 : 1, 1);
-    ctx.drawImage(art, -w / 2, -h / 2, w, h);
-    ctx.restore();
+  if (!cat.complete || cat.naturalWidth === 0) {
     return;
   }
-  // eyes look where the ghost is heading
-  for (const ex of [-5, 5]) {
-    ctx.fillStyle = '#ffffff';
-    ctx.strokeStyle = FRAME_COLOR;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.ellipse(x + ex, y - 4, 4, 5, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = '#212121';
-    ctx.beginPath();
-    ctx.arc(x + ex + g.dir.x * 2, y - 4 + g.dir.y * 2, 2, 0, Math.PI * 2);
-    ctx.fill();
+  const x = px(g.x);
+  const y = py(g.y) + (g.state === 'house' ? Math.sin(performance.now() / 150) * 2 : 0);
+  const napping = g.state === 'napping';
+  const flashing = g.frightened && frightTime < 2 && Math.floor(frightTime * 5) % 2 === 0;
+  const bob = napping ? 0 : Math.sin(performance.now() / 110 + g.home.x) * 1.5;
+  // the outline color tells the four cats apart
+  const look = g.frightened ? (flashing ? 'flash' : 'scared') : 'normal';
+  const base = (look === 'flash' ? catFlash : look === 'scared' ? catScared : cat) ?? cat;
+  const color = look === 'flash' ? '#ffffff' : look === 'scared' ? '#3949ab' : g.color;
+  const art = outlinedCat(base, look, color);
+  const w = TS * 1.6 * (art.width / cat.naturalWidth);
+  const h = w * (art.height / art.width);
+  ctx.save();
+  ctx.translate(x, y + bob);
+  if (napping) {
+    ctx.globalAlpha = 0.5;
+  }
+  // the art faces left; flip it when heading right
+  ctx.scale(g.dir.x > 0 ? -1 : 1, 1);
+  ctx.drawImage(art, -w / 2, -h / 2, w, h);
+  ctx.restore();
+  if (napping) {
+    // drifting z's rise above a napping cat
+    const t = (performance.now() / 900) % 1;
+    const hudFont = ctx.font;
+    ctx.font = 'bold 10px "Courier New", monospace';
+    text('z', x + 4 + t * 4, y - 8 - t * 6, '#ffffff', 'center');
+    ctx.font = hudFont;
   }
 };
 
