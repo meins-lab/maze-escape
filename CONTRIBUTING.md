@@ -74,7 +74,7 @@ fix: 먹힌 도깨비가 집 앞에서 맴도는 문제 수정
 
 | 대상 | 주소 |
 |---|---|
-| 프로덕션 (`main`) | <https://meins-maze-escape.netlify.app> |
+| 프로덕션 (`main`) | <https://play-box.cloud> |
 | 브랜치 배포 (`dev`) | <https://dev--meins-maze-escape.netlify.app> |
 | PR 미리보기 | `deploy-preview-<PR번호>--meins-maze-escape.netlify.app` |
 
