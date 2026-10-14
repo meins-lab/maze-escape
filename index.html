@@ -7,6 +7,7 @@
     <meta name="description" content="고양이를 피해 집 안의 먼지를 모두 치우는 로봇청소기 미로 게임. 설치 없이 브라우저에서 바로 플레이하세요." />
     <link rel="canonical" href="https://play-box.cloud/" />
     <meta name="google-adsense-account" content="ca-pub-3773338858328945" />
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3773338858328945" crossorigin="anonymous"></script>
     <link rel="icon" href="/robot.png" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://play-box.cloud/" />
@@ -19,10 +20,13 @@
     <style>
       html, body { margin: 0; height: 100%; overflow: hidden; background: #000; touch-action: none; user-select: none; }
       canvas { display: block; width: 100vw; height: 100dvh; }
+      .links { position: fixed; top: 6px; right: 10px; font: 11px/1.4 -apple-system, sans-serif; }
+      .links a { color: rgba(255, 255, 255, 0.6); text-decoration: none; }
     </style>
   </head>
   <body>
     <canvas id="game"></canvas>
+    <nav class="links"><a href="/about/">게임 소개</a> · <a href="/privacy/">개인정보처리방침</a></nav>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
