@@ -19,10 +19,13 @@
     <style>
       html, body { margin: 0; height: 100%; overflow: hidden; background: #000; touch-action: none; user-select: none; }
       canvas { display: block; width: 100vw; height: 100dvh; }
+      .links { position: fixed; top: 6px; right: 10px; font: 11px/1.4 -apple-system, sans-serif; }
+      .links a { color: rgba(255, 255, 255, 0.6); text-decoration: none; }
     </style>
   </head>
   <body>
     <canvas id="game"></canvas>
+    <nav class="links"><a href="/about/">게임 소개</a> · <a href="/privacy/">개인정보처리방침</a></nav>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
