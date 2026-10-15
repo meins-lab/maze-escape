@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Ant War - 개미 행렬 땅따먹기</title>
+    <meta name="description" content="개미 행렬을 보내 불개미와 흰개미의 굴을 모두 차지하는 실시간 땅따먹기 전략 게임. 설치 없이 브라우저에서 바로 플레이하세요." />
+    <link rel="canonical" href="https://play-box.cloud/ant-war/" />
+    <meta name="google-adsense-account" content="ca-pub-3773338858328945" />
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3773338858328945" crossorigin="anonymous"></script>
+    <link rel="icon" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PlayBox" />
+    <meta property="og:url" content="https://play-box.cloud/ant-war/" />
+    <meta property="og:title" content="Ant War - 개미 행렬 땅따먹기" />
+    <meta property="og:description" content="개미 행렬을 보내 적 개미굴을 모두 차지하는 실시간 땅따먹기 게임" />
+    <meta property="og:image" content="https://play-box.cloud/ant-war/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      :root { --bg: #f4ead7; --ink: #3b2f2a; --muted: #7a6a60; --line: #eadfc8; --panel: #fffaf0; --soft: #f6eedd; --go: #34b866; --go-hover: #2ea55b; --shadow: 0 8px 24px rgba(59, 47, 42, 0.12); }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; word-break: keep-all; }
+      main { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 22px 12px 20px; }
+      button { font: inherit; color: inherit; cursor: pointer; }
+      h1 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 26px; font-weight: 900; letter-spacing: -0.5px; }
+      h1 img { width: 24px; transform: rotate(-20deg); }
+      .hud { display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 16px; background: var(--panel); box-shadow: var(--shadow); }
+      .stepper { display: flex; flex: none; align-items: center; border-radius: 10px; background: var(--soft); }
+      .stepper button { width: 32px; height: 32px; border: 0; border-radius: 10px; background: none; color: var(--muted); font-size: 12px; }
+      .stepper button:hover:not(:disabled) { background: var(--line); }
+      .stepper button:disabled { opacity: 0.3; cursor: default; }
+      .stepper span { min-width: 54px; font-weight: 800; text-align: center; }
+      .power { display: flex; flex: 1; height: 32px; overflow: hidden; border-radius: 10px; background: var(--soft); }
+      .power span { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 52px; color: #fff; font-size: 13px; font-weight: 800; transition: flex-grow 0.4s; }
+      .mini { width: 14px; height: 18px; }
+      .restart { flex: none; width: 36px; height: 32px; border: 0; border-radius: 10px; background: var(--soft); color: var(--muted); font-size: 17px; font-weight: 900; }
+      .restart:hover { background: var(--line); }
+      .stage { position: relative; }
+      canvas { display: block; border-radius: 18px; touch-action: none; box-shadow: var(--shadow); }
+      .overlay { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 18px; background: rgba(59, 47, 42, 0.28); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); animation: fade 0.2s ease-out; }
+      .overlay[hidden] { display: none; }
+      .card { width: min(320px, 88%); padding: 24px 20px 20px; border-radius: 22px; background: var(--panel); text-align: center; box-shadow: 0 16px 40px rgba(30, 20, 10, 0.25); animation: pop 0.25s ease-out; }
+      .badge { display: inline-block; margin-bottom: 6px; padding: 4px 12px; border-radius: 999px; background: #ffe7a3; color: #8a5a00; font-size: 13px; font-weight: 800; }
+      .hero { display: block; width: 96px; margin: 0 auto 6px; }
+      .hero.sad { width: 56px; transform: rotate(180deg); }
+      .title { margin: 2px 0 6px; font-size: 21px; font-weight: 900; letter-spacing: -0.3px; }
+      .sub { margin: 0 0 18px; color: var(--muted); }
+      .foes { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 10px 0 14px; }
+      .foe { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px 5px 8px; border-radius: 999px; background: var(--soft); font-size: 14px; font-weight: 700; }
+      .foe .mini { width: 16px; height: 21px; }
+      .tips { margin: 0 0 18px; padding: 0; list-style: none; text-align: left; font-size: 13px; color: var(--muted); }
+      .tips li { display: flex; align-items: center; gap: 8px; padding: 8px 2px; border-top: 1px solid var(--line); }
+      .tips li:last-child { border-bottom: 1px solid var(--line); }
+      .tips b { flex: none; min-width: 46px; color: var(--ink); font-size: 13px; }
+      .actions { display: flex; flex-direction: column; gap: 8px; }
+      .actions button { padding: 14px 0; border: 0; border-radius: 14px; font-size: 17px; font-weight: 800; transition: background 0.15s, transform 0.1s; }
+      .actions button:active { transform: scale(0.98); }
+      .actions .primary { background: var(--go); color: #fff; }
+      .actions .primary:hover { background: var(--go-hover); }
+      .actions .secondary { background: var(--soft); color: var(--ink); }
+      .actions .secondary:hover { background: var(--line); }
+      .actions button:focus-visible { outline: 3px solid #b8ecc9; outline-offset: 2px; }
+      .home { position: fixed; top: 10px; left: 12px; z-index: 1; padding: 8px 14px; border-radius: 999px; background: var(--panel); color: var(--ink); font-size: 14px; font-weight: 800; text-decoration: none; box-shadow: var(--shadow); -webkit-tap-highlight-color: transparent; }
+      .home:hover { background: #fff; }
+      .home:active { transform: scale(0.97); }
+      .links { position: fixed; top: 6px; right: 10px; font: 11px/1.4 -apple-system, sans-serif; }
+      .links a { color: var(--muted); text-decoration: none; }
+      @keyframes fade { from { opacity: 0; } }
+      @keyframes pop { from { transform: translateY(8px); opacity: 0; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1><img src="/ant-war/ant-1.png" alt="" /> Ant War</h1>
+      <div class="hud" id="hud">
+        <div class="stepper">
+          <button id="prev" aria-label="이전 레벨">◀</button>
+          <span id="level">레벨 1</span>
+          <button id="next" aria-label="다음 레벨">▶</button>
+        </div>
+        <div class="power" id="power" title="진영별 개미 수"></div>
+        <button class="restart" id="restart" aria-label="다시 하기">↻</button>
+      </div>
+      <div class="stage">
+        <canvas id="field"></canvas>
+        <div class="overlay" id="overlay" hidden></div>
+      </div>
+    </main>
+    <a class="home" href="/">← 홈으로</a>
+    <nav class="links"><a href="/ant-war/about/">게임 소개</a> · <a href="/privacy/">개인정보처리방침</a></nav>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

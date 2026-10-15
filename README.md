@@ -10,6 +10,7 @@
 |---|---|---|
 | Maze Escape | [/maze-escape/](https://play-box.cloud/maze-escape/) | 고양이를 피해 집 안의 먼지를 모두 치우는 로봇청소기 미로 게임 |
 | Mole Patch | [/mole-patch/](https://play-box.cloud/mole-patch/) | 두더지 굴을 피해 텃밭을 모두 일구는 지뢰찾기 퍼즐 게임 |
+| Ant War | [/ant-war/](https://play-box.cloud/ant-war/) | 개미 행렬을 보내 적 개미굴을 모두 차지하는 실시간 땅따먹기 게임 |
 
 ## 구조
 
