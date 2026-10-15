@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>검 강화하기 - +0 목검에서 +100 절대검까지</title>
+    <meta name="description" content="버튼 하나로 낡은 목검을 +100 절대검 오메가까지 강화하는 게임. 단계가 오를수록 성공 확률은 낮아지고 파괴 위험이 커집니다." />
+    <link rel="canonical" href="https://play-box.cloud/sword/" />
+    <meta name="google-adsense-account" content="ca-pub-3773338858328945" />
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3773338858328945" crossorigin="anonymous"></script>
+    <link rel="icon" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PlayBox" />
+    <meta property="og:url" content="https://play-box.cloud/sword/" />
+    <meta property="og:title" content="검 강화하기 - +0 목검에서 +100 절대검까지" />
+    <meta property="og:description" content="버튼 하나로 검을 +100까지 강화하는 게임" />
+    <meta property="og:image" content="https://play-box.cloud/sword/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      :root { --bg: #3a3f53; --panel: #464c63; --line: #5a6179; --ink: #fbf7ef; --muted: #c0c5d4; --gold: #f0bf55; --ok: #74d68a; --bad: #ef6a5b; --aura: #b08a5a; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+      body { background: radial-gradient(110% 55% at 50% 36%, color-mix(in srgb, var(--aura) 32%, var(--bg)), transparent 72%) fixed, linear-gradient(#4a5069, #2c3040) fixed; min-height: 100vh; }
+      main { display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 420px; margin: 0 auto; padding: 36px 16px 24px; }
+      h1 { margin: 0; font-size: 13px; letter-spacing: 0.2em; color: var(--muted); font-weight: 700; }
+      .head { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+      .level { font-size: 48px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; background: linear-gradient(#fff3cf, var(--gold) 55%, #b97a1c); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 2px 10px color-mix(in srgb, var(--gold) 35%, transparent)); }
+      .name { font-size: 20px; font-weight: 800; min-height: 28px; color: color-mix(in srgb, var(--aura) 45%, #fff); transition: color 0.6s; }
+      .progress { width: 100%; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+      .progress i { display: block; height: 100%; width: 0; border-radius: 2px; background: linear-gradient(90deg, var(--gold), var(--aura)); transition: width 0.4s; }
+      .stage { position: relative; width: min(84vw, 340px); aspect-ratio: 1; display: grid; place-items: center; }
+      .stage::before { content: ""; position: absolute; inset: 2%; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--aura) 60%, transparent), color-mix(in srgb, var(--aura) 18%, transparent) 70%, transparent); transition: background 0.6s; }
+      .stage img { position: relative; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35)); }
+      .stage.success::before { animation: flare 0.6s ease-out; }
+      .stage.success img { animation: up 0.5s ease-out; }
+      .stage.fail img { animation: shake 0.35s; }
+      .stage.destroy::before { background: radial-gradient(closest-side, color-mix(in srgb, var(--bad) 55%, transparent), transparent); }
+      .stage.destroy img { animation: shatter 0.7s ease-in forwards; }
+      @keyframes flare { 0% { transform: scale(0.6); filter: brightness(2.5); } 100% { transform: scale(1); filter: none; } }
+      @keyframes up { 0% { transform: scale(0.88); filter: brightness(2.2); } 100% { transform: scale(1); filter: none; } }
+      @keyframes shake { 25% { transform: translateX(-8px) rotate(-2deg); } 50% { transform: translateX(8px) rotate(2deg); } 75% { transform: translateX(-4px); } }
+      @keyframes shatter { 0% { transform: none; filter: none; } 30% { transform: rotate(-6deg) scale(1.05); filter: brightness(1.8) saturate(0); } 100% { transform: rotate(14deg) scale(0.4); filter: brightness(0.2); opacity: 0; } }
+      .odds { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+      .bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--line); }
+      .bar i { display: block; height: 100%; transition: width 0.3s; }
+      .bar .s { background: var(--ok); } .bar .f { background: #6a7290; } .bar .d { background: var(--bad); }
+      .legend { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+      .legend .s { color: var(--ok); } .legend .f { color: var(--muted); } .legend .d { color: var(--bad); }
+      .msg { min-height: 22px; font-weight: 800; text-align: center; }
+      .msg.success { color: var(--ok); } .msg.fail, .msg.drop { color: var(--muted); } .msg.destroy { color: var(--bad); }
+      .msg.pop { animation: pop 0.3s ease-out; }
+      @keyframes pop { 0% { transform: scale(1.25); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+      button { font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+      .go { position: relative; overflow: hidden; width: 100%; padding: 17px; border: 0; border-radius: 16px; background: linear-gradient(#f7d57a, #e2a73a 55%, #c7871e); color: #3a2604; font-size: 21px; font-weight: 900; letter-spacing: 0.04em; box-shadow: 0 5px 0 #7e5410, 0 10px 24px rgba(240, 191, 85, 0.25); touch-action: manipulation; }
+      .go::after { content: ""; position: absolute; top: 0; left: -60%; width: 40%; height: 100%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent); animation: shine 2.8s infinite; }
+      @keyframes shine { 0%, 60% { left: -60%; } 100% { left: 130%; } }
+      .go:active { transform: translateY(4px); box-shadow: 0 1px 0 #7e5410, 0 4px 12px rgba(240, 191, 85, 0.2); }
+      .go:disabled { filter: grayscale(1) brightness(0.55); cursor: default; }
+      .go:disabled::after { display: none; }
+      .stats { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .stats div { padding: 8px 0; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); text-align: center; }
+      .stats b { display: block; font-size: 16px; font-variant-numeric: tabular-nums; }
+      .stats span { font-size: 11px; color: var(--muted); }
+      .reset { padding: 7px 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--muted); font-size: 13px; }
+      .leave { width: min(90vw, 340px); padding: 22px 18px 14px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); color: var(--ink); text-align: center; }
+      .leave::backdrop { background: rgba(20, 22, 30, 0.6); }
+      .leave form { display: flex; flex-direction: column; gap: 8px; }
+      .leave .q { margin: 0; font-size: 18px; font-weight: 800; }
+      .leave .sub { margin: 0 0 8px; word-break: keep-all; font-size: 13px; color: var(--muted); }
+      .go.small { padding: 13px; font-size: 16px; }
+      .plain { padding: 11px; border: 1px solid var(--line); border-radius: 12px; background: none; color: var(--ink); font-weight: 700; }
+      .home { position: fixed; top: 10px; left: 12px; z-index: 1; padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--panel) 85%, transparent); color: var(--ink); font-size: 14px; font-weight: 800; text-decoration: none; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); -webkit-tap-highlight-color: transparent; }
+      .home:active { transform: translateY(1px); }
+      .links { position: fixed; top: 8px; right: 12px; font: 11px/1.4 -apple-system, sans-serif; }
+      .links a { color: var(--muted); text-decoration: none; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="head">
+        <h1>검 강화하기</h1>
+        <div class="level" id="level"></div>
+        <div class="name" id="name"></div>
+      </div>
+      <div class="progress"><i id="progress"></i></div>
+      <div class="stage" id="stage"><img id="sword" alt="" width="396" height="396" /></div>
+      <div class="msg" id="msg"></div>
+      <div class="odds" id="odds"></div>
+      <button class="go" id="go">강화하기</button>
+      <div class="stats">
+        <div><b id="best"></b><span>최고 단계</span></div>
+        <div><b id="tries"></b><span>시도</span></div>
+        <div><b id="broken"></b><span>파괴</span></div>
+      </div>
+      <button class="reset" id="reset" hidden>처음부터 다시</button>
+    </main>
+    <dialog class="leave" id="leave">
+      <form method="dialog">
+        <p class="q">강화 단계를 저장할까요?</p>
+        <p class="sub">저장하면 다음에 지금 단계부터 이어서 하고,<br />저장하지 않으면 +0부터 다시 시작합니다.</p>
+        <button class="go small" value="save">저장하고 나가기</button>
+        <button class="plain" value="discard">저장하지 않고 나가기</button>
+        <button class="plain" value="cancel">계속 강화하기</button>
+      </form>
+    </dialog>
+    <a class="home" href="/" id="home">← 홈으로</a>
+    <nav class="links"><a href="/sword/about/">게임 소개</a> · <a href="/privacy/">개인정보처리방침</a></nav>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
