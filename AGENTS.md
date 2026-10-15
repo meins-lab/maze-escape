@@ -5,7 +5,7 @@
 
 ## 이 저장소의 전제
 
-Play Box(<https://play-box.cloud>)는 브라우저 미니 게임 모음입니다.
+PlayBox(<https://play-box.cloud>)는 브라우저 미니 게임 모음입니다.
 Vite 멀티 페이지와 TypeScript만 씁니다. 런타임 의존성이 없습니다.
 
 ## 구조
