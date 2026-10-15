@@ -3,67 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>게임 소개 - Maze Escape</title>
-    <meta name="description" content="로봇청소기 미로 게임 Maze Escape의 규칙, 조작법, 고양이별 특징과 공략을 소개합니다." />
+    <title>Play Box 소개</title>
+    <meta name="description" content="Play Box는 설치 없이 브라우저에서 바로 즐기는 미니 게임 모음입니다. 서비스 소개와 운영 방식을 안내합니다." />
     <link rel="canonical" href="https://play-box.cloud/about/" />
-    <link rel="icon" href="/robot.png" />
+    <link rel="icon" href="/favicon.png" />
     <meta name="google-adsense-account" content="ca-pub-3773338858328945" />
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3773338858328945" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="/page.css" />
   </head>
   <body>
     <main>
-      <header><a class="home" href="/maze-escape/">← 게임으로 돌아가기</a></header>
-      <h1>Maze Escape 게임 소개</h1>
-      <p class="lead">고양이를 피해 집 안의 먼지를 모두 치우는 로봇청소기 미로 게임입니다.</p>
-      <img class="hero" src="/og-image.jpg" alt="로봇청소기가 고양이들을 피해 미로 같은 집 안을 청소하는 장면" width="1200" height="630" />
-      <a class="play" href="/maze-escape/">지금 플레이하기</a>
+      <header><a class="home" href="/">← 홈으로</a></header>
+      <h1>Play Box 소개</h1>
+      <p class="lead">설치 없이 브라우저에서 바로 즐기는 미니 게임 모음입니다.</p>
 
-      <h2>어떤 게임인가요</h2>
-      <p>여러분은 집 안을 청소하는 로봇청소기입니다. 거실과 방을 이은 미로 같은 집 안에는 먼지가 잔뜩 쌓여 있고, 장난꾸러기 고양이 네 마리가 청소를 방해합니다. 고양이에게 부딪히지 않고 바닥의 먼지를 모두 빨아들이면 다음 레벨로 넘어갑니다. 설치 없이 브라우저에서 바로 즐길 수 있고, PC와 스마트폰 모두에서 플레이할 수 있습니다.</p>
+      <h2>어떤 곳인가요</h2>
+      <p>Play Box는 짧은 시간에 가볍게 즐길 수 있는 웹 게임을 모아 둔 사이트입니다. 앱을 내려받거나 회원가입할 필요 없이 링크만 열면 바로 시작할 수 있고, PC와 스마트폰 브라우저 모두에서 플레이할 수 있습니다. 게임은 계속 추가할 예정입니다.</p>
 
-      <h2>조작법</h2>
+      <h2>게임 목록</h2>
       <table>
-        <tr><th>PC</th><td>방향키 또는 W·A·S·D</td></tr>
-        <tr><th>스마트폰</th><td>화면을 가고 싶은 방향으로 밀기(스와이프)</td></tr>
+        <tr>
+          <th><a href="/maze-escape/">Maze Escape</a></th>
+          <td>고양이를 피해 집 안의 먼지를 모두 치우는 로봇청소기 미로 게임입니다. <a href="/maze-escape/about/">게임 소개 보기</a></td>
+        </tr>
       </table>
-      <p>로봇청소기는 멈추지 않고 계속 움직입니다. 벽에 막히면 스스로 꺾어 나아가므로, 갈림길에 닿기 전에 미리 방향을 입력해 두는 것이 요령입니다. 미로 양쪽 끝의 통로는 반대편으로 이어져 있어 위기에서 빠져나갈 때 유용합니다.</p>
 
-      <h2>점수와 아이템</h2>
-      <table>
-        <tr><th>먼지</th><td>10점. 모두 치우면 레벨 클리어</td></tr>
-        <tr><th>배터리</th><td>50점. 먹으면 잠시 동안 고양이들이 파랗게 겁을 먹고 도망칩니다</td></tr>
-        <tr><th>겁먹은 고양이</th><td>200점부터 시작해 연속으로 잡을 때마다 두 배(200 → 400 → 800 → 1600)</td></tr>
-      </table>
-      <p>잡힌 고양이는 그 자리에서 잠시 낮잠을 잡니다. 낮잠 자는 고양이는 부딪혀도 괜찮고, 몇 초 뒤 로봇청소기가 멀리 떨어져 있을 때 깨어나 다시 움직입니다. 고양이가 다시 하얗게 깜빡이기 시작하면 배터리 효과가 곧 끝난다는 신호입니다.</p>
-
-      <h2>네 마리 고양이</h2>
-      <p>고양이들은 각자 성격이 달라서, 테두리 색으로 구분할 수 있습니다.</p>
-      <table>
-        <tr><th><span class="dot" style="background:#e53935"></span>빨강</th><td>로봇청소기를 곧장 뒤쫓습니다. 가장 먼저 집 밖에 나와 있습니다.</td></tr>
-        <tr><th><span class="dot" style="background:#8e24aa"></span>보라</th><td>로봇청소기가 향하는 앞쪽으로 돌아가 길목을 막습니다.</td></tr>
-        <tr><th><span class="dot" style="background:#1e88e5"></span>파랑</th><td>빨강 고양이와 짝을 이뤄 앞뒤에서 가두려고 합니다.</td></tr>
-        <tr><th><span class="dot" style="background:#00897b"></span>청록</th><td>멀리 있을 때는 다가오다가, 가까워지면 슬쩍 물러납니다.</td></tr>
-      </table>
-      <p>고양이들은 일정 시간마다 각자의 구석으로 흩어졌다가 다시 추격을 시작합니다. 흩어지는 순간이 먼지를 모으기 가장 좋은 때입니다.</p>
-
-      <h2>레벨과 목숨</h2>
+      <h2>이용 안내</h2>
       <ul>
-        <li>레벨은 1부터 5까지 있고, 레벨마다 집 구조와 벽 색이 달라집니다.</li>
-        <li>레벨이 오를수록 고양이가 빨라지고, 배터리 효과 시간은 짧아집니다.</li>
-        <li>목숨은 최대 3개입니다. 레벨을 깰 때마다 하나씩 회복됩니다.</li>
-        <li>레벨 5를 깨면 엔딩을 볼 수 있습니다. 최고 점수는 기기에 저장됩니다.</li>
+        <li>모든 게임은 무료이며, 사이트 운영을 위해 광고가 표시될 수 있습니다.</li>
+        <li>최고 점수 같은 게임 기록은 서버가 아니라 이용자의 기기(브라우저)에만 저장됩니다.</li>
+        <li>개인정보 처리에 관한 내용은 <a href="/privacy/">개인정보처리방침</a>에서 확인할 수 있습니다.</li>
       </ul>
 
-      <h2>공략 팁</h2>
-      <ul>
-        <li>배터리는 고양이가 가까이 올 때까지 아껴 두었다가 먹으면 연속으로 잡기 쉽습니다.</li>
-        <li>막다른 길이 없는 대신 긴 통로가 많습니다. 양쪽에서 고양이가 다가오면 가까운 갈림길이나 좌우 터널로 빠지세요.</li>
-        <li>낮잠 자는 고양이 근처에서는 너무 오래 머물지 마세요. 멀어지는 순간 깨어날 수 있습니다.</li>
-      </ul>
+      <h2>문의</h2>
+      <p>버그 제보나 의견은 <a href="https://github.com/meins-lab/play-box/issues" rel="noopener">GitHub 이슈</a>로 남겨 주세요.</p>
 
       <footer>
-        <a href="/maze-escape/">게임 하기</a> · <a href="/privacy/">개인정보처리방침</a>
+        <a href="/">홈</a> · <a href="/privacy/">개인정보처리방침</a>
       </footer>
     </main>
   </body>
