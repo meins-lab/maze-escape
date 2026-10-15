@@ -12,6 +12,7 @@
 | Mole Patch | [/mole-patch/](https://play-box.cloud/mole-patch/) | 두더지 굴을 피해 텃밭을 모두 일구는 지뢰찾기 퍼즐 게임 |
 | Ant War | [/ant-war/](https://play-box.cloud/ant-war/) | 개미 행렬을 보내 적 개미굴을 모두 차지하는 실시간 땅따먹기 게임 |
 | 검 강화하기 | [/sword/](https://play-box.cloud/sword/) | 버튼 하나로 낡은 목검을 +100 절대검까지 강화하는 확률 게임 |
+| Cheese Guard | [/cheese-guard/](https://play-box.cloud/cheese-guard/) | 고양이를 배치해 치즈를 훔치러 오는 생쥐 떼를 막는 디펜스 게임 |
 
 ## 구조
 
