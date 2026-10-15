@@ -773,13 +773,13 @@ const drawMaze = () => {
 };
 
 const robot = new Image();
-robot.src = '/robot.png';
+robot.src = '/maze-escape/robot.png';
 const dust = new Image();
-dust.src = '/dust.png';
+dust.src = '/maze-escape/dust.png';
 const battery = new Image();
-battery.src = '/battery.png';
+battery.src = '/maze-escape/battery.png';
 const cat = new Image();
-cat.src = '/cat.png';
+cat.src = '/maze-escape/cat.png';
 
 // color-washed copies of the cat for the frightened look, built once the image loads
 const tinted = (img: HTMLImageElement, color: string, amount: number) => {
