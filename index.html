@@ -34,7 +34,9 @@
             "name": "PlayBox 게임 목록",
             "itemListElement": [
               { "@type": "ListItem", "position": 1, "name": "Maze Escape", "url": "https://play-box.cloud/maze-escape/" },
-              { "@type": "ListItem", "position": 2, "name": "Mole Patch", "url": "https://play-box.cloud/mole-patch/" }
+              { "@type": "ListItem", "position": 2, "name": "Mole Patch", "url": "https://play-box.cloud/mole-patch/" },
+              { "@type": "ListItem", "position": 3, "name": "Ant War", "url": "https://play-box.cloud/ant-war/" },
+              { "@type": "ListItem", "position": 4, "name": "검 강화하기", "url": "https://play-box.cloud/sword/" }
             ]
           }
         ]
@@ -42,9 +44,15 @@
     </script>
     <link rel="stylesheet" href="/page.css" />
     <style>
-      .banner { margin: 0; }
-      .banner img { display: block; width: 100%; height: auto; border-radius: 16px; }
-      .games { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 280px)); gap: 16px; margin-top: 24px; }
+      /* 그림 가장자리를 페이지 배경색(--bg)으로 맞춰 두어, 남는 양옆은 같은 색으로 칠하면 이음새 없이 화면 끝까지 이어진다 */
+      .banner { width: 100%; margin: 0; aspect-ratio: 2172 / 724; max-height: 230px; overflow: hidden; background: var(--bg); }
+      .banner picture { display: block; width: fit-content; height: 100%; margin: 0 auto; }
+      /* 그림 테두리의 미세한 색 차이가 상자처럼 보이지 않게 가장자리를 녹인다 */
+      .banner img { display: block; height: 100%; width: auto; mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent), linear-gradient(transparent, #000 6%, #000 94%, transparent); mask-composite: intersect; }
+      @media (max-width: 600px) { .banner { aspect-ratio: 1250 / 674; } }
+      main { max-width: 1200px; }
+      /* 한 줄 최대 5개. 카드는 줄을 꽉 채우며 게임이 늘수록 작아지고, 200px 밑으로는 줄을 바꾼다 */
+      .games { display: grid; grid-template-columns: repeat(auto-fit, minmax(max(200px, (100% - 4 * 16px) / 5), 1fr)); gap: 16px; margin-top: 24px; }
       .game { display: flex; flex-direction: column; background: var(--card); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(59, 47, 42, 0.12); transition: transform 0.15s; }
       .game > a { color: inherit; text-decoration: none; }
       .game a.about { margin: auto 16px 0; padding: 10px 0 14px; border-top: 1px solid #e6d9c2; color: var(--accent); font-size: 14px; font-weight: 700; }
@@ -56,14 +64,13 @@
     </style>
   </head>
   <body>
+    <h1 class="banner">
+      <picture>
+        <source media="(max-width: 600px)" srcset="/banner-mobile.jpg" width="1250" height="674" />
+        <img src="/banner.jpg" alt="PlayBox - 심심할 땐 미니게임 모음집" width="2172" height="724" />
+      </picture>
+    </h1>
     <main>
-      <h1 class="banner">
-        <picture>
-          <source media="(max-width: 600px)" srcset="/banner-mobile.jpg" width="840" height="472" />
-          <img src="/banner.jpg" alt="PlayBox - 심심할 땐 미니게임 모음집" width="1500" height="500" />
-        </picture>
-      </h1>
-
       <section class="games">
         <article class="game">
           <a href="/maze-escape/">
@@ -84,6 +91,26 @@
             </div>
           </a>
           <a class="about" href="/mole-patch/about/">게임 소개 →</a>
+        </article>
+        <article class="game">
+          <a href="/ant-war/">
+            <img src="/ant-war/og-image.jpg" alt="노란 개미 행렬과 빨간 불개미 행렬이 들판 한가운데서 맞붙고, 구석 굴에서 보라 흰개미가 내다보는 장면" width="1200" height="630" />
+            <div>
+              <h2>Ant War</h2>
+              <p>개미 행렬을 보내 적 개미굴을 모두 차지하는 실시간 땅따먹기 게임</p>
+            </div>
+          </a>
+          <a class="about" href="/ant-war/about/">게임 소개 →</a>
+        </article>
+        <article class="game">
+          <a href="/sword/">
+            <img src="/sword/og-image.jpg" alt="대장간 모루 위에서 망치를 맞은 목검이 빛나는 우주의 검으로 강화되는 장면" width="1200" height="630" />
+            <div>
+              <h2>검 강화하기</h2>
+              <p>버튼 하나로 낡은 목검을 +100 절대검까지 강화하는 확률 게임</p>
+            </div>
+          </a>
+          <a class="about" href="/sword/about/">게임 소개 →</a>
         </article>
       </section>
 
