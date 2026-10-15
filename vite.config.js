@@ -1,15 +1,21 @@
+import { existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { defineConfig } from 'vite';
 
-// 게임을 추가하면 폴더/index.html을 만들고 여기에 등록한다
+const root = import.meta.dirname;
+const NOT_PAGES = new Set(['dist', 'node_modules', 'public']);
+
+// 루트의 <게임>/index.html을 모두 입력으로 잡는다. 게임을 추가할 때 이 파일은 고치지 않는다
+const games = readdirSync(root, { withFileTypes: true })
+  .filter((d) => d.isDirectory() && !d.name.startsWith('.') && !NOT_PAGES.has(d.name))
+  .filter((d) => existsSync(resolve(root, d.name, 'index.html')))
+  .map((d) => [d.name, resolve(root, d.name, 'index.html')]);
+
 export default defineConfig({
   build: {
     rollupOptions: {
-      input: {
-        home: resolve(import.meta.dirname, 'index.html'),
-        mazeEscape: resolve(import.meta.dirname, 'maze-escape/index.html'),
-      },
+      input: { home: resolve(root, 'index.html'), ...Object.fromEntries(games) },
     },
   },
 });
