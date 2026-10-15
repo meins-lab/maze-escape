@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Cheese Guard - 고양이 치즈 지키기 디펜스</title>
+    <meta name="description" content="고양이를 배치하고 키워서 치즈를 훔치러 오는 생쥐 떼를 막는 디펜스 게임. 설치 없이 브라우저에서 바로 플레이하세요." />
+    <link rel="canonical" href="https://play-box.cloud/cheese-guard/" />
+    <meta name="google-adsense-account" content="ca-pub-3773338858328945" />
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3773338858328945" crossorigin="anonymous"></script>
+    <link rel="icon" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PlayBox" />
+    <meta property="og:url" content="https://play-box.cloud/cheese-guard/" />
+    <meta property="og:title" content="Cheese Guard - 고양이 치즈 지키기 디펜스" />
+    <meta property="og:description" content="고양이를 배치해 치즈를 훔치러 오는 생쥐 떼를 막는 디펜스 게임" />
+    <meta property="og:image" content="https://play-box.cloud/cheese-guard/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      :root { --bg: #fff6e0; --ink: #5a3a22; --muted: #8d7462; --line: #f1e2bf; --panel: #fffdf6; --soft: #fdf0cf; --butter: #ffd45c; --mint: #59c49a; --mint-hover: #48b088; --peach: #ffb38a; --shadow: 0 8px 24px rgba(90, 58, 34, 0.12); }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; word-break: keep-all; }
+      main { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 22px 12px 20px; }
+      button { font: inherit; color: inherit; cursor: pointer; }
+      h1 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 26px; font-weight: 900; letter-spacing: -0.5px; }
+      h1 img { width: 30px; }
+      .hud { display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 16px; background: var(--panel); box-shadow: var(--shadow); }
+      .hud .stat { display: flex; align-items: center; gap: 4px; height: 32px; padding: 0 10px; border-radius: 10px; background: var(--soft); font-weight: 800; white-space: nowrap; }
+      .hud .stat.round { flex: 1; justify-content: center; }
+      .hud button { flex: none; width: 40px; height: 32px; border: 0; border-radius: 10px; background: var(--soft); font-weight: 900; }
+      .hud button:hover { background: var(--line); }
+      .stage { position: relative; }
+      canvas { display: block; border-radius: 18px; touch-action: manipulation; box-shadow: var(--shadow); cursor: pointer; }
+      .panel { display: flex; flex-direction: column; justify-content: center; gap: 8px; min-height: 92px; padding: 10px 12px; border-radius: 16px; background: var(--panel); box-shadow: var(--shadow); }
+      .panel .tip { margin: 0; color: var(--muted); font-size: 13px; text-align: center; }
+      .panel .tip b { color: var(--ink); }
+      .panel .head { display: flex; align-items: center; gap: 10px; }
+      .panel .head .icon { width: 40px; height: 40px; object-fit: contain; }
+      .panel .head b { display: block; font-size: 15px; }
+      .panel .head small { color: var(--muted); font-size: 12px; }
+      .ups { display: flex; gap: 6px; }
+      .ups button { display: flex; flex: 1; align-items: center; gap: 6px; min-width: 0; padding: 6px 8px; border: 0; border-radius: 12px; background: var(--soft); text-align: left; transition: background 0.15s; }
+      .ups button:hover:not(:disabled) { background: var(--line); }
+      .ups button:disabled { opacity: 0.45; cursor: default; }
+      .ups button img { width: 30px; height: 30px; object-fit: contain; flex: none; }
+      .ups button span { min-width: 0; }
+      .ups button b { display: block; overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+      .ups button small { font-size: 12px; color: var(--muted); }
+      .ups .maxed { display: flex; flex: 1; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; font-weight: 700; }
+      .ups .sell { flex: none; justify-content: center; color: #c0563c; font-size: 13px; font-weight: 800; }
+      .overlay { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 18px; background: rgba(90, 58, 34, 0.28); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); animation: fade 0.2s ease-out; }
+      .overlay[hidden] { display: none; }
+      .card { width: min(330px, 88%); padding: 20px; border-radius: 22px; background: var(--panel); text-align: center; box-shadow: 0 16px 40px rgba(60, 35, 15, 0.25); animation: pop 0.25s ease-out; }
+      .hero { display: block; width: 84px; margin: 0 auto 6px; }
+      .title { margin: 2px 0 6px; font-size: 21px; font-weight: 900; letter-spacing: -0.3px; }
+      .sub { margin: 0 0 14px; color: var(--muted); }
+      .sub.small { margin-top: -10px; font-size: 13px; }
+      .tips { margin: 0 0 16px; padding: 0; list-style: none; text-align: left; font-size: 13px; color: var(--muted); }
+      .tips li { display: flex; gap: 8px; padding: 7px 2px; border-top: 1px solid var(--line); }
+      .tips li:last-child { border-bottom: 1px solid var(--line); }
+      .tips b { flex: none; min-width: 52px; color: var(--ink); }
+      .card .primary { width: 100%; padding: 14px 0; border: 0; border-radius: 14px; background: var(--mint); color: #fff; font-size: 17px; font-weight: 800; transition: background 0.15s, transform 0.1s; }
+      .card .primary:hover { background: var(--mint-hover); }
+      .card .primary:active { transform: scale(0.98); }
+      .home { position: fixed; top: 10px; left: 12px; z-index: 1; padding: 8px 14px; border-radius: 999px; background: var(--panel); color: var(--ink); font-size: 14px; font-weight: 800; text-decoration: none; box-shadow: var(--shadow); -webkit-tap-highlight-color: transparent; }
+      .home:active { transform: scale(0.97); }
+      .links { position: fixed; top: 6px; right: 10px; font: 11px/1.4 -apple-system, sans-serif; }
+      .links a { color: var(--muted); text-decoration: none; }
+      /* 좁은 화면에서는 「← 홈으로」 버튼과 제목이 겹치지 않게 제목을 아래로 내린다 */
+      @media (max-width: 520px) { main { padding-top: 58px; } }
+      @media (max-width: 360px) { .hud .stat { padding: 0 6px; font-size: 13px; } .hud button { width: 32px; } }
+      @keyframes fade { from { opacity: 0; } }
+      @keyframes pop { from { transform: translateY(8px); opacity: 0; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1><img src="/cheese-guard/cheese.png" alt="" /> Cheese Guard</h1>
+      <div class="hud" id="hud">
+        <span class="stat round" id="wave">라운드 1</span>
+        <span class="stat" title="돈">🪙 <span id="gold">0</span></span>
+        <span class="stat" title="남은 치즈">🧀 <span id="slices">8/8</span></span>
+        <button id="speed" aria-label="속도">2×</button>
+        <button id="restart" aria-label="다시 하기">↻</button>
+      </div>
+      <div class="stage">
+        <canvas id="field"></canvas>
+        <div class="overlay" id="overlay" hidden></div>
+      </div>
+      <div class="panel" id="panel"></div>
+    </main>
+    <a class="home" href="/">← 홈으로</a>
+    <nav class="links"><a href="/cheese-guard/about/">게임 소개</a> · <a href="/privacy/">개인정보처리방침</a></nav>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
